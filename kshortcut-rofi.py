@@ -18,6 +18,17 @@ class Shortcut(NamedTuple):
     pretty_command: Optional[str]
 
 
+def send_kglobalaccel_dbus(component, function, *args):
+    cmd = [
+        "qdbus",
+        "org.kde.kglobalaccel",
+        f"/component/{component}",
+        function,
+        *args,
+    ]
+    return subprocess.run(cmd, check=True, capture_output=True)
+
+
 def read_file():
     config_dir = Path(
         os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
@@ -93,10 +104,19 @@ def read_file():
     real_result: list[Shortcut] = []
     for i, shortcut in enumerate(result):
         section_name = shortcut.component
+        pretty_command = shortcut.pretty_command
         if section_name.startswith("services"):
             # desktop launchers.
             desktop_file = section_name.split("[")[1]
             section_name = desktop_file.replace(".", "_").replace("-", "_")
+            try:
+                friendlyName = send_kglobalaccel_dbus(
+                    section_name, "org.kde.kglobalaccel.Component.friendlyName"
+                )
+                pretty_command = friendlyName.stdout.decode("utf-8").strip()
+
+            except subprocess.CalledProcessError:
+                pass
             section_names[section_name] = desktop_file
 
         cleaned_shortcuts = list(set(shortcut.shortcuts))
@@ -109,22 +129,11 @@ def read_file():
                 pretty_component=section_names.get(section_name, section_name),
                 command=shortcut.command,
                 shortcuts=cleaned_shortcuts,
-                pretty_command=shortcut.pretty_command,
+                pretty_command=pretty_command,
             )
         )
         # this is the pretty name for the section
     return real_result
-
-
-def send_kglobalaccel_dbus(component, function, shortcut):
-    cmd = [
-        "qdbus",
-        "org.kde.kglobalaccel",
-        f"/component/{component}",
-        function,
-        shortcut,
-    ]
-    subprocess.run(cmd, check=True)
 
 
 def main() -> None:
