@@ -11,6 +11,10 @@ Packagers are welcomed.
 
 There's no dependencies to the Python script itself.
 
+## Screenshot
+
+![Screenshot](./screenshot.png)
+
 ## Dependencies
 * rofi
 * qdbus
