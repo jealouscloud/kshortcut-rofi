@@ -87,10 +87,10 @@ def read_file():
                     [x for x in shortcut.split("\t") if x]
                 )  # split by tab
             pretty_name = entries[-1].strip()
-        assert shortcuts, (
-            "Shortcuts list should not be empty. "
-            "Even no assignment should be 'none'"
-        )
+
+        if not shortcuts:
+            shortcuts = ["none"]
+
         result.append(
             Shortcut(
                 component=section,
